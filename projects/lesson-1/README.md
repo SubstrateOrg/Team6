@@ -1,7 +1,11 @@
-* 1.请在本目录完成第一课作业；
+* 1.构建交易
+![image](https://raw.githubusercontent.com/zjb0807/Team6/master/projects/lesson-1/images/1.make-transfer.png)
 
-* 2.完成后，请及时提交作业；
+* 2.签名广播
+![image](https://raw.githubusercontent.com/zjb0807/Team6/master/projects/lesson-1/images/2.sign-and-submit.png)
 
-* 3.提交作业过程：
-> 本人账号（guobin）/仓库（TeamX）-分支（master）→ 组织（SubstrateOrg）/团队（TeamX）-个人分支（01-guobin）
+* 3.交易成功
+![image](https://raw.githubusercontent.com/zjb0807/Team6/master/projects/lesson-1/images/3.transfer-success.png)
 
+* 4.交易明细
+![image](https://raw.githubusercontent.com/zjb0807/Team6/master/projects/lesson-1/images/4.transfer-details.png)
