@@ -5,6 +5,6 @@
 3.交易成功
 ![](https://ws2.sinaimg.cn/large/006y8mN6gy1g6vw95bhilj31fm0u0wij.jpg)
 4.交易明细
-![](https://ws3.sinaimg.cn/large/006y8mN6gy1g6vwe3zzwcj31ed0u077w.jpg)
+![](https://ws3.sinaimg.cn/large/006y8mN6gy1g6vw9qwb48j31eg0u0tdh.jpg)
 
 
