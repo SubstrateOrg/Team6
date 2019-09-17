@@ -10,6 +10,15 @@
 
 use support::{decl_module, decl_storage, decl_event, StorageValue, dispatch::Result};
 use system::ensure_signed;
+use primitives::traits::Hash;
+
+#[derive(Encode, Decode, Default, Clone, PartialEq)]
+#[cfg_attr(feature = "std", derive(Debug))]
+pub struct Kitty<Hash, AccountId, KittyId> {
+	id: KittyId,
+	dna: Hash,
+	owner: AccountId,
+}
 
 /// The module's configuration trait.
 pub trait Trait: system::Trait {
@@ -17,6 +26,8 @@ pub trait Trait: system::Trait {
 
 	/// The overarching event type.
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+	type KittyId: Parameter + SimpleArithmetic + Default + Copy;
 }
 
 // This module's storage items.
@@ -25,7 +36,20 @@ decl_storage! {
 		// Just a dummy storage item.
 		// Here we are declaring a StorageValue, `Something` as a Option<u32>
 		// `get(something)` is the default getter which returns either the stored `u32` or `None` if nothing stored
-		Something get(something): Option<u32>;
+		Kitties get(kitties): map T::KittyId => Kitty<T::Hash, T::AccountId, T::KittyId>;
+		KittyOwner get(kitty_owner): map T::KittyId => Option<T::AccountId>;
+
+		KittyCount get(kitty_count): u64;
+
+		OwnedKittyCount get(owned_kitty_count): map T::AccountId => u64;
+		OwnedKittyIndex get(owned_kitty_index): map (T::AccountId, u64) => T::KittyId; // 返回玩家第 u64 只猫在所有猫中的 KittyId
+		OwnedKittyId get(owned_kitty_id): map T::KittyId => (T::AccountId, u64); // 根据 KittyId 返回该猫在哪个玩家那里排名第几只。
+
+		NextKittyIndex get(next_kitty_index) config(): T:KittyId;
+
+		Nonce: u64;
+
+		Admin: get(admin) config(): T::AccountId;
 	}
 }
 
@@ -40,13 +64,27 @@ decl_module! {
 		// Just a dummy entry point.
 		// function that can be called by the external world as an extrinsics call
 		// takes a parameter of the type `AccountId`, stores it and emits an event
-		pub fn do_something(origin, something: u32) -> Result {
+		pub fn new_kitty(origin, something: u32) -> Result {
 			// TODO: You only need this if you want to check it was signed.
 			let who = ensure_signed(origin)?;
 
-			// TODO: Code to execute when something calls this.
-			// For example: the following line stores the passed in u32 in the storage
-			Something::put(something);
+			ensure!(who == Self::admin(), "only Admin can new a kitty");
+
+			let nonce = <Nonce<T>>::get();
+			let dna = (<system::Module<T>>::random_seed(), &who, nonce)
+				.using_encoded(<T as system::Trait>::Hashing::hash);
+
+			<Nonce<T>>::mutate(|n| *n += 1);
+
+			let id = Self::next_kitty_index();
+			ensure!(!<KittyOwner<T>>::exists(id), "the kitty id exists");
+			
+			let kitty = Kitty {
+				id: id,
+				dna: dna,
+				owner: who,
+			}
+
 
 			// here we are raising the Something event
 			Self::deposit_event(RawEvent::SomethingStored(something, who));

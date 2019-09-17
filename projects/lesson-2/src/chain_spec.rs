@@ -1,7 +1,7 @@
 use primitives::{Pair, Public};
 use substrate_kitties_runtime::{
 	AccountId, BabeConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
-	SudoConfig, IndicesConfig, SystemConfig, WASM_BINARY, 
+	SudoConfig, IndicesConfig, SystemConfig, WASM_BINARY, TemplateModuleConfig,
 };
 use babe_primitives::{AuthorityId as BabeId};
 use grandpa_primitives::{AuthorityId as GrandpaId};
@@ -131,5 +131,9 @@ fn testnet_genesis(initial_authorities: Vec<(AccountId, AccountId, GrandpaId, Ba
 		grandpa: Some(GrandpaConfig {
 			authorities: initial_authorities.iter().map(|x| (x.2.clone(), 1)).collect(),
 		}),
+		template: Some(TemplateModuleConfig {
+			next_kitty_index: 1,
+			admin: account_key("Alice"),
+		})
 	}
 }
