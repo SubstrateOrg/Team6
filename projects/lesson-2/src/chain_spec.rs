@@ -1,4 +1,4 @@
-use primitives::{Pair, Public};
+use primitives::{Pair, Public, sr25519};
 use substrate_kitties_runtime::{
 	AccountId, BabeConfig, BalancesConfig, GenesisConfig, GrandpaConfig,
 	SudoConfig, IndicesConfig, SystemConfig, WASM_BINARY, TemplateModuleConfig,
@@ -39,6 +39,12 @@ pub fn get_authority_keys_from_seed(seed: &str) -> (AccountId, AccountId, Grandp
 		get_from_seed::<GrandpaId>(seed),
 		get_from_seed::<BabeId>(seed),
 	)
+}
+
+fn account_key(s: &str) -> AccountId {
+	sr25519::Pair::from_string(&format!("//{}", s), None)
+		.expect("static values are valid; qed")
+		.public()
 }
 
 impl Alternative {
