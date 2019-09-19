@@ -64,6 +64,8 @@ pub type DigestItem = generic::DigestItem<Hash>;
 /// Used for the module template in `./template.rs`
 mod template;
 
+mod kim_jong_un;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -191,6 +193,9 @@ impl babe::Trait for Runtime {
 	type ExpectedBlockTime = ExpectedBlockTime;
 }
 
+
+impl kim_jong_un::Trait for Runtime{}
+
 impl grandpa::Trait for Runtime {
 	type Event = Event;
 }
@@ -272,6 +277,7 @@ construct_runtime!(
 		Sudo: sudo,
 		// Used for the module template in `./template.rs`
 		TemplateModule: template::{Module, Call, Storage, Event<T>},
+		kim_jong_un: kim_jong_un::{Module,}
 	}
 );
 
