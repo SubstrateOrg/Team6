@@ -53,6 +53,13 @@ decl_module! {
             let nonce = <Nonce<T>>::get();
             let random_hash = (<system::Module<T>>::random_seed(), &sender, nonce)
                 .using_encoded(<T as system::Trait>::Hashing::hash);
+            // 因为md5出来的是128bit的，所以将产生的256bit的random_hash做一次md5得到随机的128bit,如下:
+            // extern crate crypto;
+            // use crypto::md5::Md5;
+            // use crypto::digest::Digest;
+            // let mut hasher = Md5::new();
+            // hasher.input(&random_hash);
+            // let random_hash = hasher.result_str();
 
             let new_kitty = Kitty {
                 id: random_hash,
