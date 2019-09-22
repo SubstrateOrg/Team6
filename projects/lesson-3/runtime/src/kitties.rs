@@ -23,26 +23,26 @@ pub trait Trait: system::Trait {
 }
 
 #[derive(Encode, Decode, Clone, Default)]
-pub struct Kitty<T> where T::Trait {
-	dna: [u8, 16],
+pub struct Kitty<T> where T: Trait {
+	dna: [u8; 16],
 	owner: T::AccountId,
 	price: u32,
-};
+}
 
 decl_storage! {
 	trait Store for Module<T: Trait> as kitties {
 		/// Stores all the kitties, key is the kitty id / index
-		pub Kitties get(kitty): map u32 => Kitty;
+		pub Kitties get(kitty): map u32 => Kitty<T>;
 		/// Stores the total number of kitties. i.e. the next kitty index
 		pub KittiesCount get(kitties_count): u32;
 		pub OwnerKitties get(owner_kitties): map T::AccountId => Option<Vec<Kitty>>;
 	}
 }
 
-impl <T> OwnerKitties<T> where T::Trait {
-	fn add_kitty(owner: T::AccountId, kitty: Kitty) {
+impl <T> OwnerKitties<T> where T:Trait {
+	fn add_kitty(owner: T::AccountId, kitty: Kitty<T>) {
 		let mut kitties;
-		if let Some(one) = Self:get(owner.clone()) {
+		if let Some(one) = Self::get(owner.clone()) {
 			kitties = one;
 		} else if {
 			kitties = Vec::new();
@@ -59,14 +59,24 @@ decl_module! {
 			let sender = ensure_signed(origin)?;
 			let payload = (<system::Module<T>>::random_seed(), sender, <system::Module<T>>::extrinsic_index(), <system::Module<T>>::block_number());
 			let dna = payload.using_encoded(blake2_128);
-			Self::do_create(sender, dna)
+			Self::do_create(sender, dna)?;
+			Ok(())
 		}
-		/// Breed a new kitty from mother and farther
-		pub fn breed(origin, mother: u32, farther, u32) -> Result {
+		/// Breed a new kitty from mother and father
+		pub fn breed(origin, mother: u32, father: u32) -> Result {
 			let sender = ensure_signed(origin)?;
-			let payload = (mother + farther + <system::Module<T>>::random_seed());
+			match Kitties::get(mother.Clone()) {
+				Some(one) => one,
+				None => Err("mother does not exist")
+			}
+			match Kitties::get(father.Clone()) {
+				Some(one) => one,
+				None => Err("father does not exist")
+			}
+			let payload = (mother + father + <system::Module<T>>::random_seed());
 			let dna = payload.using_encoded(blake2_128);
-			Self::do_create(sender, dna)
+			Self::do_create(sender, dna)?;
+			Ok(())
 		}
 
 	}
@@ -81,7 +91,7 @@ impl<T: Trait> Module<T> {
 			let kitty = Kitty{
 				dna: dna,
 				owner: sender.clone(),
-				price: 1,
+				price: 1.into(),
 			};
 			Kitties::insert(count, kitty);
 			KittiesCount::put(count + 1);
