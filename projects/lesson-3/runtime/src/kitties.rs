@@ -1,7 +1,8 @@
-use support::{decl_module, decl_storage, StorageValue, StorageMap};
+use support::{decl_module, decl_storage, StorageValue, StorageMap, dispatch::Result};
 use codec::{Encode, Decode};
 use runtime_io::blake2_128;
 use system::ensure_signed;
+use rstd::prelude::Vec;
 
 /*
 V1需求
@@ -44,7 +45,7 @@ impl <T> OwnerKitties<T> where T:Trait {
 		let mut kitties;
 		if let Some(one) = Self::get(owner.clone()) {
 			kitties = one;
-		} else if {
+		} else {
 			kitties = Vec::new();
 		}
 		kitties.push(kitty);
@@ -73,7 +74,7 @@ decl_module! {
 				Some(one) => one,
 				None => Err("father does not exist")
 			}
-			let payload = (mother + father + <system::Module<T>>::random_seed());
+			let payload = (mother, father, <system::Module<T>>::random_seed());
 			let dna = payload.using_encoded(blake2_128);
 			Self::do_create(sender, dna)?;
 			Ok(())
