@@ -146,6 +146,10 @@ impl<T: Trait> Module<T> {
 		let kitties_count_sender = Self::owned_kitties_count(sender);
 		let kitties_count_to = Self::owned_kitties_count(to);
 
+		if sender == to {
+			return Err("Can't transfer to self");
+		}
+
 		// method 2: O(n)
 		if false {
 			let mut index: T::KittyIndex = 0.into();
