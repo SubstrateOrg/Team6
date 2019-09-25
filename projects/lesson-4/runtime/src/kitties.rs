@@ -23,6 +23,9 @@ decl_storage! {
 		pub OwnedKitties get(owned_kitties): map (T::AccountId, T::KittyIndex) => T::KittyIndex;
 		/// Get number of kitties by account ID
 		pub OwnedKittiesCount get(owned_kitties_count): map T::AccountId => T::KittyIndex;
+
+		/// Get Owner by kitty index
+		pub KittiesOwned get(kitties_owned): map T::KittyIndex => (T::AccountId, T::KittyIndex);
 	}
 }
 
@@ -42,12 +45,12 @@ decl_module! {
 			Self::do_breed(sender, kitty_id_1, kitty_id_2)?;
 		}
 
-        /// Transfer kitty
+		/// Transfer kitty
 		pub fn transfer(origin, to: T::AccountId, kitty_id: T::KittyIndex) {
 			let sender = ensure_signed(origin)?;
 
 			Self::do_transfer(&sender, &to, kitty_id)?;
-        }
+		}
 	}
 }
 
@@ -90,7 +93,10 @@ impl<T: Trait> Module<T> {
 		// Store the ownership information
 		let user_kitties_id = Self::owned_kitties_count(owner.clone());
 		<OwnedKitties<T>>::insert((owner.clone(), user_kitties_id), kitty_id);
-		<OwnedKittiesCount<T>>::insert(owner, user_kitties_id + 1.into());
+		<OwnedKittiesCount<T>>::insert(owner.clone(), user_kitties_id + 1.into());
+
+		// Store Kitty owned
+		<KittiesOwned<T>>::insert(kitty_id, (owner, user_kitties_id));
 	}
 
 	fn do_create(sender: T::AccountId) -> Result {
@@ -140,19 +146,37 @@ impl<T: Trait> Module<T> {
 		let kitties_count_sender = Self::owned_kitties_count(sender);
 		let kitties_count_to = Self::owned_kitties_count(to);
 
-		let mut index: T::KittyIndex = 0.into();
-		while index < kitties_count_sender {
-			if <OwnedKitties<T>>::get((sender.clone(), index)) == kitty_id {
-				if index != kitties_count_sender - 1.into() {
-					<OwnedKitties<T>>::swap((sender.clone(), index), (sender.clone(), kitties_count_sender - 1.into()));
+		// method 2: O(n)
+		if false {
+			let mut index: T::KittyIndex = 0.into();
+			while index < kitties_count_sender {
+				if <OwnedKitties<T>>::get((sender.clone(), index)) == kitty_id {
+					if index != kitties_count_sender - 1.into() {
+						<OwnedKitties<T>>::swap((sender.clone(), index), (sender.clone(), kitties_count_sender - 1.into()));
+						break;
+					}
+				} else {
+					if index == kitties_count_sender - 1.into() {
+						return Err("No owner for this kitty");
+					}
 				}
-			} else {
-				if index == kitties_count_sender - 1.into() {
-					return Err("No owner for this kitty");
-				}
+
+				index += 1.into();
+			}
+		}
+
+		// method 2: O(1)
+		if true {
+			let kitties_owned = Self::kitties_owned(kitty_id);
+			if sender.clone() != kitties_owned.0 {
+				return Err("No owner for this kitty");
 			}
 
-			index += 1.into();
+			if kitties_owned.1 != kitties_count_sender - 1.into() {
+				<OwnedKitties<T>>::swap((sender.clone(), kitties_owned.1), (sender.clone(), kitties_count_sender - 1.into()));
+			}
+
+			<KittiesOwned<T>>::insert(kitty_id, (to.clone(), kitties_count_to));
 		}
 
 		<OwnedKitties<T>>::remove((sender.clone(), kitties_count_sender - 1.into()));
