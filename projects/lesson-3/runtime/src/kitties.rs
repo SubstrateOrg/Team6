@@ -18,6 +18,14 @@ V2需求
 	繁殖小⼩猫,选择两只现有的猫作为⽗母
 	⼩小猫必须继承⽗母的基因
 	同样的⽗母⽣生出来的⼩小猫不能相同
+
+V3需求
+	重构 create，使⽤用新的帮助函数 
+	完成 combine_dna
+	transfer kitty 转移猫 
+	要求复杂度必须优于 O(n)
+	创建新的polkadot apps项⽬
+	设计如何在substrate中实现树形结构
 */
 
 pub trait Trait: system::Trait {
