@@ -51,15 +51,28 @@ fn combine_dna(dna1: u8, dna2: u8, selector: u8) -> u8 {
 	// selector.map_bits(|bit, index| if (bit == 1) { dna1 & (1 << index) } else { dna2 & (1 << index) })
 	// 注意 map_bits这个方法不存在。只要能达到同样效果，不局限算法
 	// 测试数据：dna1 = 0b11110000, dna2 = 0b11001100, selector = 0b10101010, 返回值 0b11100100
-	let dna: u8 = 0;
+	let mut dna: u8 = 0;
+	let mut cal = 2;
 	for i in 1..7 {
-		if (&selector % (2**i) == 0.into()) {
-			if (&dna2 % (2**i) == 1.into())
-				dna += 2**i;
+        println!("{}", selector % 2 );
+		if ((selector % 2) == 0.into()) {
+            println!("{}", dna2 % 2 );
+			if ((dna2 % 2) == 1.into()) {
+				dna += cal;
+
+            }
 		} else {
-			if (&dna1 % (2**i) == 1.into())
-				dna += 2**i;
+            println!("{}", dna1 % 2 );
+			if ((dna1 % 2) == 1.into()) {
+				dna += cal;
+
+            }
 		}
+        selector = selector / 2;
+        dna1 = dna1 / 2;
+        dna2 = dna2 / 2;
+		cal *=2;
+        println!("{},{:b},{:b}", i, cal, dna);
 	}
 	return dna;
 }
