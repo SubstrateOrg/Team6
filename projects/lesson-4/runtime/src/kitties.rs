@@ -47,34 +47,19 @@ decl_module! {
 
 fn combine_dna(dna1: u8, dna2: u8, selector: u8) -> u8 {
 	// 作业：实现combine_dna
-	// 伪代码：
+	let mut final_dna = 0b00000000;
+	for i in 0..8 {
+		let flag = 1 << i;
+		if flag & selector == 0u8 {
+			final_dna = final_dna | (dna2 & flag);
+		} else {
+			final_dna = final_dna | (dna1 & flag);
+		}
+	}
 	// selector.map_bits(|bit, index| if (bit == 1) { dna1 & (1 << index) } else { dna2 & (1 << index) })
 	// 注意 map_bits这个方法不存在。只要能达到同样效果，不局限算法
 	// 测试数据：dna1 = 0b11110000, dna2 = 0b11001100, selector = 0b10101010, 返回值 0b11100100
-	let mut dna: u8 = 0;
-	let mut cal = 2;
-	for i in 1..7 {
-        println!("{}", selector % 2 );
-		if ((selector % 2) == 0.into()) {
-            println!("{}", dna2 % 2 );
-			if ((dna2 % 2) == 1.into()) {
-				dna += cal;
-
-            }
-		} else {
-            println!("{}", dna1 % 2 );
-			if ((dna1 % 2) == 1.into()) {
-				dna += cal;
-
-            }
-		}
-        selector = selector / 2;
-        dna1 = dna1 / 2;
-        dna2 = dna2 / 2;
-		cal *=2;
-        println!("{},{:b},{:b}", i, cal, dna);
-	}
-	return dna;
+	final_dna
 }
 
 impl<T: Trait> Module<T> {
