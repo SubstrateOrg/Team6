@@ -231,9 +231,6 @@ mod tests {
 	}
 
 	/* ---------- add balances begin ---------- */
-	use std::{cell::RefCell};
-	use support::traits::{Get};
-
 	pub type Balance = u64;
 
 	parameter_types! {
@@ -241,17 +238,6 @@ mod tests {
 		pub const CreationFee: Balance = 0;
 		pub const TransactionBaseFee: u64 = 0;
 		pub const TransactionByteFee: u64 = 0;
-	}
-
-	thread_local! {
-		static EXISTENTIAL_DEPOSIT: RefCell<u64> = RefCell::new(0);
-	}
-
-	pub struct ExistentialDeposit;
-	impl Get<u64> for ExistentialDeposit {
-		fn get() -> u64 {
-			EXISTENTIAL_DEPOSIT.with(|v| *v.borrow())
-		}
 	}
 
 	impl balances::Trait for Test {
@@ -262,7 +248,7 @@ mod tests {
 		type TransactionPayment = ();
 		type TransferPayment = ();
 		type DustRemoval = ();
-		type ExistentialDeposit = ExistentialDeposit;
+		type ExistentialDeposit = ();
 		type TransferFee = TransferFee;
 		type CreationFee = CreationFee;
 		type TransactionBaseFee = TransactionBaseFee;
