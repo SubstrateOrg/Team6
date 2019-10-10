@@ -20,8 +20,8 @@ impl<Storage, Key, Value> LinkedList<Storage, Key, Value> where
  		Self::read(key, None)
  	}
 
-  	fn write_head(account: &Key, item: LinkedItem<Value>) {
- 		Self::write(account, None, item);
+  	fn write_head(key: &Key, item: LinkedItem<Value>) {
+ 		Self::write(key, None, item);
  	}
 
   	fn read(key: &Key, value: Option<Value>) -> LinkedItem<Value> {
@@ -37,9 +37,44 @@ impl<Storage, Key, Value> LinkedList<Storage, Key, Value> where
 
     pub fn append(key: &Key, value: Value) {
         // 作业：实现 append
+		//implementation append
+		let mut head = Self::read_head(key);
+        let new_item = LinkedItem { prev: head.prev, next: Option::None};
+        Self::write(key, Option::Some(value), new_item);
+
+        match head.prev {
+            Some(v) => {
+                let mut last = Self::read(key, head.prev);
+                head.prev = Option::Some(value);
+                last.next = Option::Some(value);
+                Self::write(key, Some(v), last);
+                Self::write_head(key, head);
+            },
+            None => {
+                head.prev = Option::Some(value);
+                head.next = Option::Some(value);
+                Self::write_head(key, head);
+            }
+        }
     }
 
     pub fn remove(key: &Key, value: Value) {
         // 作业：实现 remove
+		// implementation remove
+		let item = Self::read(key, Option::Some(value));
+        if item.prev == item.next {
+            let mut head = Self::read(key, item.prev);
+            head.next = Option::None;
+            head.prev = Option::None;
+            Self::write_head(key, head);
+        } else {
+            let mut prev = Self::read(key, item.prev);
+            let mut next = Self::read(key, item.next);
+            prev.next = item.next;
+            next.prev = item.prev;
+            Self::write(key, item.prev, prev);
+            Self::write(key, item.next, next);
+        }
+        Storage::remove(&(key.clone(), Option::Some(value)));
     }
 }
