@@ -3,7 +3,7 @@ use support::{
 	Parameter, traits::Currency
 };
 use sr_primitives::traits::{SimpleArithmetic, Bounded, Member};
-use codec::{Encode, Decode};
+use codec::{Encode, Decode, Input, Output, Error};
 use runtime_io::blake2_128;
 use system::ensure_signed;
 use rstd::result;
@@ -17,8 +17,22 @@ pub trait Trait: system::Trait {
 
 type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
-#[derive(Encode, Decode)]
+//#[derive(Encode, Decode)]
 pub struct Kitty(pub [u8; 16]);
+
+impl Encode for Kitty {
+	fn encode_to<T: Output>(&self, dest: &mut T) {
+		//self.0.encode_to(dest);
+		dest.push(&self.0);
+	}
+}
+
+impl Decode for Kitty {
+	fn decode<I: Input>(input: &mut I) -> core::result::Result<Self, Error> {
+		let dna = <[u8; 16]>::decode(input)?;
+		Ok(Kitty(dna))
+	}
+}
 
 type KittyLinkedItem<T> = LinkedItem<<T as Trait>::KittyIndex>;
 type OwnedKittiesList<T> = LinkedList<OwnedKitties<T>, <T as system::Trait>::AccountId, <T as Trait>::KittyIndex>;
@@ -85,10 +99,10 @@ decl_module! {
 		}
 
 		/// Transfer a kitty to new owner
- 		pub fn transfer(origin, to: T::AccountId, kitty_id: T::KittyIndex) {
- 			let sender = ensure_signed(origin)?;
+		pub fn transfer(origin, to: T::AccountId, kitty_id: T::KittyIndex) {
+			let sender = ensure_signed(origin)?;
 
-  			ensure!(<OwnedKitties<T>>::exists(&(sender.clone(), Some(kitty_id))), "Only owner can transfer kitty");
+			ensure!(<OwnedKitties<T>>::exists(&(sender.clone(), Some(kitty_id))), "Only owner can transfer kitty");
 
 			Self::do_transfer(&sender, &to, kitty_id);
 
@@ -174,7 +188,7 @@ impl<T: Trait> Module<T> {
 		ensure!(kitty2.is_some(), "Invalid kitty_id_2");
 		ensure!(kitty_id_1 != kitty_id_2, "Needs different parent");
 		ensure!(Self::kitty_owner(&kitty_id_1).map(|owner| owner == *sender).unwrap_or(false), "Not onwer of kitty1");
- 		ensure!(Self::kitty_owner(&kitty_id_2).map(|owner| owner == *sender).unwrap_or(false), "Not owner of kitty2");
+		ensure!(Self::kitty_owner(&kitty_id_2).map(|owner| owner == *sender).unwrap_or(false), "Not owner of kitty2");
 
 		let kitty_id = Self::next_kitty_id()?;
 
@@ -196,10 +210,10 @@ impl<T: Trait> Module<T> {
 	}
 
 	fn do_transfer(from: &T::AccountId, to: &T::AccountId, kitty_id: T::KittyIndex)  {
- 		<OwnedKittiesList<T>>::remove(&from, kitty_id);
- 		<OwnedKittiesList<T>>::append(&to, kitty_id);
- 		<KittyOwners<T>>::insert(kitty_id, to);
- 	}
+		<OwnedKittiesList<T>>::remove(&from, kitty_id);
+		<OwnedKittiesList<T>>::append(&to, kitty_id);
+		<KittyOwners<T>>::insert(kitty_id, to);
+	}
 }
 
 /// Tests for Kitties module
