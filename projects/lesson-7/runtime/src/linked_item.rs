@@ -1,12 +1,30 @@
 use support::{StorageMap, Parameter};
 use sr_primitives::traits::Member;
-use codec::{Encode, Decode};
+use codec::{Encode, Decode, Input, Output, Error};
 
 #[cfg_attr(feature = "std", derive(Debug, PartialEq, Eq))]
-#[derive(Encode, Decode)]
+//#[derive(Encode, Decode)]
 pub struct LinkedItem<Value> {
 	pub prev: Option<Value>,
 	pub next: Option<Value>,
+}
+
+impl <Value> Encode for LinkedItem<Value> where Value: Encode {
+	fn encode_to<T: Output>(&self, dest: &mut T) {
+		self.prev.encode_to(dest);
+		self.next.encode_to(dest);
+	}
+}
+
+impl <Value> Decode for LinkedItem<Value> where Value: Decode {
+	fn decode<I: Input>(input: &mut I) -> core::result::Result<Self, Error> {
+		let prev = <Option<Value>>::decode(input)?;
+		let next = <Option<Value>>::decode(input)?;
+		Ok(LinkedItem{
+			prev: prev,
+			next: next,
+		})
+	}
 }
 
 pub struct LinkedList<Storage, Key, Value>(rstd::marker::PhantomData<(Storage, Key, Value)>);
@@ -36,7 +54,6 @@ impl<Storage, Key, Value> LinkedList<Storage, Key, Value> where
 	}
 
 	pub fn append(key: &Key, value: Value) {
-		// 作业：实现 append
 		let head = Self::read_head(key);
 		let new_head = LinkedItem {
 			prev: Some(value),
@@ -60,7 +77,6 @@ impl<Storage, Key, Value> LinkedList<Storage, Key, Value> where
 	}
 
 	pub fn remove(key: &Key, value: Value) {
-		// 作业：实现 remove
 		if let Some(item) = Storage::take(&(key.clone(), Some(value))) {
 			let prev = Self::read(key, item.prev);
 			let new_prev = LinkedItem {

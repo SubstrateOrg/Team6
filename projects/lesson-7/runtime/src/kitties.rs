@@ -3,7 +3,7 @@ use support::{
 	Parameter, traits::Currency
 };
 use sr_primitives::traits::{SimpleArithmetic, Bounded, Member};
-use codec::{Encode, Decode};
+use codec::{Encode, Decode, Input, Output, Error};
 use runtime_io::blake2_128;
 use system::ensure_signed;
 use rstd::result;
@@ -17,8 +17,22 @@ pub trait Trait: system::Trait {
 
 type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
-#[derive(Encode, Decode)]
+//#[derive(Encode, Decode)]
 pub struct Kitty(pub [u8; 16]);
+
+impl Encode for Kitty {
+	fn encode_to<T: Output>(&self, dest: &mut T) {
+		//self.0.encode_to(dest);
+		dest.push(&self.0);
+	}
+}
+
+impl Decode for Kitty {
+	fn decode<I: Input>(input: &mut I) -> core::result::Result<Self, Error> {
+		let dna = <[u8; 16]>::decode(input)?;
+		Ok(Kitty(dna))
+	}
+}
 
 type KittyLinkedItem<T> = LinkedItem<<T as Trait>::KittyIndex>;
 type OwnedKittiesList<T> = LinkedList<OwnedKitties<T>, <T as system::Trait>::AccountId, <T as Trait>::KittyIndex>;
@@ -202,7 +216,7 @@ impl<T: Trait> Module<T> {
 	}
 }
 
-/// tests for this module
+/// Tests for Kitties module
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -229,34 +243,6 @@ mod tests {
 		pub const MaximumBlockLength: u32 = 2 * 1024;
 		pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
 	}
-
-	/* ---------- add balances begin ---------- */
-	pub type Balance = u64;
-
-	parameter_types! {
-		pub const TransferFee: Balance = 0;
-		pub const CreationFee: Balance = 0;
-		pub const TransactionBaseFee: u64 = 0;
-		pub const TransactionByteFee: u64 = 0;
-	}
-
-	impl balances::Trait for Test {
-		type Balance = Balance;
-		type OnFreeBalanceZero = ();
-		type OnNewAccount = ();
-		type Event = ();
-		type TransactionPayment = ();
-		type TransferPayment = ();
-		type DustRemoval = ();
-		type ExistentialDeposit = ();
-		type TransferFee = TransferFee;
-		type CreationFee = CreationFee;
-		type TransactionBaseFee = TransactionBaseFee;
-		type TransactionByteFee = TransactionByteFee;
-		type WeightToFee = ();
-	}
-	/* ---------- add balances end ---------- */
-
 	impl system::Trait for Test {
 		type Origin = Origin;
 		type Call = ();
@@ -275,16 +261,34 @@ mod tests {
 		type AvailableBlockRatio = AvailableBlockRatio;
 		type Version = ();
 	}
-
-	impl Trait for Test {
-		type Event = ();
-		type KittyIndex = u32;
-		type Currency = balances::Module<Self>;
+	parameter_types! {
+		pub const ExistentialDeposit: u64 = 0;
+		pub const TransferFee: u64 = 0;
+		pub const CreationFee: u64 = 0;
+		pub const TransactionBaseFee: u64 = 0;
+		pub const TransactionByteFee: u64 = 0;
 	}
-
+	impl balances::Trait for Test {
+		type Balance = u64;
+		type OnFreeBalanceZero = ();
+		type OnNewAccount = ();
+		type Event = ();
+		type TransactionPayment = ();
+		type TransferPayment = ();
+		type DustRemoval = ();
+		type ExistentialDeposit = ExistentialDeposit;
+		type TransferFee = TransferFee;
+		type CreationFee = CreationFee;
+		type TransactionBaseFee = TransactionBaseFee;
+		type TransactionByteFee = TransactionByteFee;
+		type WeightToFee = ();
+	}
+	impl Trait for Test {
+		type KittyIndex = u32;
+		type Currency = balances::Module<Test>;
+		type Event = ();
+	}
 	type OwnedKittiesTest = OwnedKitties<Test>;
-	type OwnedKittiesListTest = OwnedKittiesList<Test>;
-    type KittyLinkedItem = super::KittyLinkedItem<Test>;
 
 	// This function basically just builds a genesis storage key/value store according to
 	// our desired mockup.
@@ -295,53 +299,53 @@ mod tests {
 	#[test]
 	fn owned_kitties_can_append_values() {
 		with_externalities(&mut new_test_ext(), || {
-			OwnedKittiesListTest::append(&0, 1);
+			OwnedKittiesList::<Test>::append(&0, 1);
 
-			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem::<Test> {
 				prev: Some(1),
 				next: Some(1),
 			}));
 
-			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem::<Test> {
 				prev: None,
 				next: None,
 			}));
 
-			OwnedKittiesListTest::append(&0, 2);
+			OwnedKittiesList::<Test>::append(&0, 2);
 
-			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem::<Test> {
 				prev: Some(2),
 				next: Some(1),
 			}));
 
-			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem::<Test> {
 				prev: None,
 				next: Some(2),
 			}));
 
-			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), Some(KittyLinkedItem::<Test> {
 				prev: Some(1),
 				next: None,
 			}));
 
-			OwnedKittiesListTest::append(&0, 3);
+			OwnedKittiesList::<Test>::append(&0, 3);
 
-			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem::<Test> {
 				prev: Some(3),
 				next: Some(1),
 			}));
 
-			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem::<Test> {
 				prev: None,
 				next: Some(2),
 			}));
 
-			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), Some(KittyLinkedItem::<Test> {
 				prev: Some(1),
 				next: Some(3),
 			}));
 
-			assert_eq!(OwnedKittiesTest::get(&(0, Some(3))), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(3))), Some(KittyLinkedItem::<Test> {
 				prev: Some(2),
 				next: None,
 			}));
@@ -351,32 +355,32 @@ mod tests {
 	#[test]
 	fn owned_kitties_can_remove_values() {
 		with_externalities(&mut new_test_ext(), || {
-			OwnedKittiesListTest::append(&0, 1);
-			OwnedKittiesListTest::append(&0, 2);
-			OwnedKittiesListTest::append(&0, 3);
+			OwnedKittiesList::<Test>::append(&0, 1);
+			OwnedKittiesList::<Test>::append(&0, 2);
+			OwnedKittiesList::<Test>::append(&0, 3);
 
-			OwnedKittiesListTest::remove(&0, 2);
+			OwnedKittiesList::<Test>::remove(&0, 2);
 
-			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem::<Test> {
 				prev: Some(3),
 				next: Some(1),
 			}));
 
-			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem::<Test> {
 				prev: None,
 				next: Some(3),
 			}));
 
 			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), None);
 
-			assert_eq!(OwnedKittiesTest::get(&(0, Some(3))), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(3))), Some(KittyLinkedItem::<Test> {
 				prev: Some(1),
 				next: None,
 			}));
 
-			OwnedKittiesListTest::remove(&0, 1);
+			OwnedKittiesList::<Test>::remove(&0, 1);
 
-			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem::<Test> {
 				prev: Some(3),
 				next: Some(3),
 			}));
@@ -385,14 +389,14 @@ mod tests {
 
 			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), None);
 
-			assert_eq!(OwnedKittiesTest::get(&(0, Some(3))), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(3))), Some(KittyLinkedItem::<Test> {
 				prev: None,
 				next: None,
 			}));
 
-			OwnedKittiesListTest::remove(&0, 3);
+			OwnedKittiesList::<Test>::remove(&0, 3);
 
-			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem::<Test> {
 				prev: None,
 				next: None,
 			}));
