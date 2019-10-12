@@ -1,6 +1,10 @@
-use support::{decl_storage, decl_module, decl_event, StorageValue, StorageMap, dispatch::Result};
+use support::{decl_storage, decl_module, decl_event, StorageValue, StorageMap, dispatch::Result, ensure};
 use system::ensure_signed;
-
+use sr_primitives::traits::{
+    Hash,
+};
+use codec::{Decode, Encode};
+use byteorder::{ByteOrder, BigEndian};
 
 // The balance module's configure trait.
 pub trait Trait: balances::Trait {
@@ -12,8 +16,11 @@ pub trait Trait: balances::Trait {
 // support we have a struct: Kitty
 // and we have a storage of map: mapping (Hash => Kitty) Kitties
 #[derive(Debug, Encode, Decode, Default, Clone, PartialEq)]
+// TODO: ??? why add this
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Kitty<Hash, Balance> {
-    dna: Hash,
+    id: Hash,
+    dna: u128,
     birthTime: u64,
     price: Balance, 
     generation: u64,
@@ -23,11 +30,11 @@ pub struct Kitty<Hash, Balance> {
 decl_storage! {
 	trait Store for Module<T: Trait> as KittyStorage {
 		// Kitties storage
-        Kitties get(kitty): map T::Hash => Kitty<T::Hash, T::Balance>;
+        Kitties get(kitty_id): map T::Hash => Kitty<T::Hash, T::Balance>;
         // For account id index
-        KittyOwnership get(owner): map T::Hash => Option(T::AccountId);
+        KittyOwnership get(owner): map T::Hash => Option<T::AccountId>;
         // For kitties amount of account
-        KittyOwned get(owner): map T::AccountId => u64;
+        KittyOwned get(owner_id): map T::AccountId => u64;
 
         // For all kitties
         KittiesAmountOfAll get(kitties_amount): u64;
@@ -51,45 +58,49 @@ decl_module! {
             let sender_have = <KittyOwned<T>>::get(&sender);
 
             // set new id of account legal kitty
-            let new_kitty_id = sender_have.checked_add(1);
+            let new_kitty_id = sender_have + 1;
 
             // calc dna of new kitty
-            let dna = (&sender, new_kitty_id).using_encoded(<T as system::Trait>::Hashing::hash);
+            let id_hash = (&sender, new_kitty_id).using_encoded(<T as system::Trait>::Hashing::hash);
+
+            let dna_hash_array = id_hash.as_ref();
+			let dna_hash = BigEndian::read_u128(&dna_hash_array[0..16]);
 
             // require dna not added
-            ensure!(!<KittyOwnership<T>>::exists(dna), "Kitty Exists.");
+            ensure!(!<KittyOwnership<T>>::exists(id_hash), "Kitty Exists.");
 
             // new kitty
             let new_kitty = Kitty {
-                dna: dna,
+                id: id_hash,
+                dna: dna_hash,
                 // birthTime: BlockTimeStamp, ?? how to get block timestamp
                 birthTime: 0,
                 price: 0, 
                 generation: 0,
-            }
+            };
 
             // store kitty
-            <Kitties<T>>::insert(dna, new_kitty);
-            <KittyOwnership<T>>::insert(dna, &sender);
-            <KittyOwned<T>>::insert(new_kitty_id);
+            Kitties::insert(id_hash, new_kitty);
+            <KittyOwnership<T>>::insert(id_hash, &sender);
+            <KittyOwned<T>>::insert(&sender, new_kitty_id);
 
             // all kitties
-            let all_kitties_amount = <KittiesAmountOfAll<T>>::get().checked_add(1);
-            <KittiesAmountOfAll<T>>::put(all_kitties_amount);
-            <KittiesListOfAll<T>>::insert(all_kitties_amount, dna);
+            let all_kitties_amount =  Self::kitties_amount() + 1;
+            <KittiesAmountOfAll>::put(all_kitties_amount);
+            <KittiesListOfAll<T>>::insert(all_kitties_amount, id_hash);
 
-            Self::deposit_event(RawEvent::CreateKitty(sender, dna));
+            Self::deposit_event(RawEvent::CreateKitty(sender, id_hash));
 
             Ok(())
 
         }
 
-        pub fn drop_kitty(origin, kittyId: u64, dna: Hash) -> Result {
+        // pub fn drop_kitty(origin, kittyId: u64, dna: Hash) -> Result {
             // Drop kitty by account and id
             // The dna is used to ensure
 
             // sender
-            let sender = ensure_signed(origin)?;
+            // let sender = ensure_signed(origin)?;
 
             // ensure kitty's dna exists
 
@@ -97,7 +108,9 @@ decl_module! {
 
             // drop kitty, but id not changed ?????? not good
             // TODO: 
-        }
+
+            // Ok(())
+        // }
     }
 }
 
