@@ -9,6 +9,16 @@ use system::ensure_signed;
 use rstd::result;
 use crate::linked_item::{LinkedList, LinkedItem};
 
+
+// for impl encode and decode
+
+use support::dispatch::Output;
+use support::dispatch::Input;
+use codec::Error;
+
+// use arrayvec::ArrayVec;
+
+
 pub trait Trait: system::Trait {
 	type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 	type KittyIndex: Parameter + Member + SimpleArithmetic + Bounded + Default + Copy;
@@ -17,8 +27,28 @@ pub trait Trait: system::Trait {
 
 type BalanceOf<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
-#[derive(Encode, Decode)]
+// #[derive(Encode, Decode)]
+#[derive(Debug, PartialEq)]
 pub struct Kitty(pub [u8; 16]);
+
+impl Encode for Kitty {
+	fn encode_to<W>(&self, dest: &mut W) where W:Output {
+		// for item in self.iter() {
+		// 	item.encode_to(dest);
+		// }
+		self.0.encode_to(dest);
+	}
+}
+
+impl Decode for Kitty {
+	fn decode<I>(input: &mut I) -> Result<Self, Error> where I: Input {
+		
+		match <[u8;16]>::decode(input) {
+			Ok(x) => Ok(Kitty(x)),
+			Err(e) => return Err(e),
+		}
+	}
+}
 
 type KittyLinkedItem<T> = LinkedItem<<T as Trait>::KittyIndex>;
 type OwnedKittiesList<T> = LinkedList<OwnedKitties<T>, <T as system::Trait>::AccountId, <T as Trait>::KittyIndex>;
@@ -392,6 +422,43 @@ mod tests {
 			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), None);
 
 			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), None);
+		});
+	}
+
+	#[test]
+	fn test_encode_decode_for_kitty() {
+		with_externalities(&mut new_test_ext(), || {
+			let t = Kitty([1;16]);
+			let data = Encode::encode(&t);
+    		assert_eq!(&data,  b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01");
+			let rdata = Kitty::decode(&mut &*data);
+			assert_eq!(rdata.unwrap(), Kitty([1;16]));
+		});
+	}
+
+	#[test]
+	fn test_encode_decode_for_linkeditem() {
+		with_externalities(&mut new_test_ext(), || {
+			type LocalLinkedItemTest = LinkedItem<u8>;
+			let link_item1 = LocalLinkedItemTest{
+				prev:Some(1),
+				next:Some(3)
+			};
+			let data1 = Encode::encode(&link_item1);
+			// assert_eq!(Some(1u8).encode(),  b"\x01\x01");
+			assert_eq!(&data1,  b"\x01\x01\x01\x03");
+			let rdata = LocalLinkedItemTest::decode(&mut &*data1);
+			assert_eq!(rdata.unwrap(), link_item1);
+
+			let link_item2 = LocalLinkedItemTest{
+				prev:None,
+				next:Some(3)
+			};
+			let data2 = Encode::encode(&link_item2);
+			assert_eq!(&data2,  b"\0\x01\x03");
+			let rdata = LocalLinkedItemTest::decode(&mut &*data2);
+			assert_eq!(rdata.unwrap(), link_item2);
+
 		});
 	}
 }
