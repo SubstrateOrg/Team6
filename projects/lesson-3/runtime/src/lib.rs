@@ -67,6 +67,10 @@ mod template;
 /// Used for the module kitties in `./kitties.rs`
 mod kitties;
 
+/// Used for the module in './substrateKitties.rs'
+mod substrateKitties;
+
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -262,6 +266,11 @@ impl template::Trait for Runtime {
 impl kitties::Trait for Runtime {
 }
 
+/// Used for the module file in './substrateKitties.rs'
+impl substrateKitties::Trait for Runtime {
+	type Event = Event;
+}
+
 construct_runtime!(
 	pub enum Runtime where
 		Block = Block,
@@ -279,6 +288,8 @@ construct_runtime!(
 		TemplateModule: template::{Module, Call, Storage, Event<T>},
 		// Substrate Kitties module
 		Kitties: kitties::{Module, Storage, Call},
+		// Used for the module file in './substrateKitties.rs'
+		Substratekitties: substrateKitties::{Module, Call, Storage, Event<T>},
 	}
 );
 
