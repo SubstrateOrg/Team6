@@ -67,8 +67,7 @@ decl_module! {
             let dna_hash_array = id_hash.as_ref();
 			let dna_hash = BigEndian::read_u128(&dna_hash_array[0..16]);
 
-            // require dna not added
-            ensure!(!<KittyOwnership<T>>::exists(id_hash), "Kitty Exists.");
+            
 
             // new kitty
             let new_kitty = Kitty {
@@ -80,17 +79,7 @@ decl_module! {
                 generation: 0,
             };
 
-            // store kitty
-            Kitties::insert(id_hash, new_kitty);
-            <KittyOwnership<T>>::insert(id_hash, &sender);
-            <KittyOwned<T>>::insert(&sender, new_kitty_id);
-
-            // all kitties
-            let all_kitties_amount =  Self::kitties_amount() + 1;
-            <KittiesAmountOfAll>::put(all_kitties_amount);
-            <KittiesListOfAll<T>>::insert(all_kitties_amount, id_hash);
-
-            Self::deposit_event(RawEvent::CreateKitty(sender, id_hash));
+            Self::mint_kitty(sender, new_kitty)?;
 
             Ok(())
 
@@ -150,19 +139,10 @@ decl_module! {
                 generation: 0,
             }
 
-            // store kitty
-            Kitties::insert(id_hash, child_kitty);
-            <KittyOwnership<T>>::insert(id_hash, &sender);
-            <KittyOwned<T>>::insert(&sender, new_kitty_id);
-
-            // all kitties
-            let all_kitties_amount =  Self::kitties_amount() + 1;
-            <KittiesAmountOfAll>::put(all_kitties_amount);
-            <KittiesListOfAll<T>>::insert(all_kitties_amount, id_hash);
-
-            Self::deposit_event(RawEvent::CreateKitty(sender, id_hash));
+            Self::mint_kitty(sender, child_kitty)?;
 
             Ok(())
+            
 
         }
     }
@@ -176,3 +156,29 @@ decl_event!(
         CreateKitty(AccountId, Hash),
 	}
 );
+
+// add mint kitty impl
+impl<T: Trait> Module<T> {
+    fn mint_kitty(owner: T::AccountId, new_kitty: Kitty<T::Hash, T::Balance>) -> Result {
+        // get kitty id
+        let id_hash = new_kitty.id;
+        // get kitty dna
+        let dna = new_kitty.dna;
+        // require dna not added
+        ensure!(!<KittyOwnership<T>>::exists(id_hash), "Kitty Exists.");
+        
+        // store kitty
+        Kitties::insert(id_hash, child_kitty);
+        <KittyOwnership<T>>::insert(id_hash, &owner);
+        <KittyOwned<T>>::insert(&owner, new_kitty_id);
+
+        // all kitties
+        let all_kitties_amount =  Self::kitties_amount() + 1;
+        <KittiesAmountOfAll>::put(all_kitties_amount);
+        <KittiesListOfAll<T>>::insert(all_kitties_amount, id_hash);
+
+        Self::deposit_event(RawEvent::CreateKitty(owner, id_hash));
+
+        Ok(())
+    }
+}
